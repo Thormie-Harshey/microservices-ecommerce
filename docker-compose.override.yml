@@ -1,0 +1,73 @@
+# Development mode. Compose merges this file automatically with docker-compose.yml.
+# Start with: docker compose up -d --build, then run: docker compose watch
+# To run the hardened version instead: docker compose -f docker-compose.yml up -d
+
+x-dev-healthcheck: &dev-healthcheck
+  test: ["CMD-SHELL", "wget -qO- http://localhost:$${PORT}/health || exit 1"]
+  interval: 10s
+  timeout: 3s
+  retries: 5
+  start_period: 15s
+
+services:
+  gateway:
+    build:
+      context: ./services/gateway
+      target: dev
+    environment:
+      NODE_ENV: development
+    ports:
+      - "127.0.0.1:9229:9229"
+    healthcheck: *dev-healthcheck
+    develop:
+      watch:
+        - action: sync
+          path: ./services/gateway
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./services/gateway/package.json
+
+  product:
+    build:
+      context: ./services/product
+      target: dev
+    environment:
+      NODE_ENV: development
+    ports:
+      - "127.0.0.1:9230:9229"
+    networks: [debug]
+    healthcheck: *dev-healthcheck
+    develop:
+      watch:
+        - action: sync
+          path: ./services/product
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./services/product/package.json
+
+  order:
+    build:
+      context: ./services/order
+      target: dev
+    environment:
+      NODE_ENV: development
+    ports:
+      - "127.0.0.1:9231:9229"
+    networks: [debug]
+    healthcheck: *dev-healthcheck
+    develop:
+      watch:
+        - action: sync
+          path: ./services/order
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./services/order/package.json
+
+networks:
+  debug:

@@ -8,7 +8,8 @@ RUN npm ci --omit=dev
 FROM node:24.21.0-alpine3.24 AS dev
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+RUN chown node:node /app
+COPY --chown=node:node . .
 USER node
 CMD ["node", "--watch", "--inspect=0.0.0.0:9229", "index.js"]
 
