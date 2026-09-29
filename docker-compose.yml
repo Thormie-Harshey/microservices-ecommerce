@@ -1,0 +1,119 @@
+name: microservices-ecommerce
+
+services:
+  gateway:
+    build: ./services/gateway
+    environment:
+      PORT: ${GATEWAY_PORT}
+      PRODUCT_SERVICE_URL: http://product:${PRODUCT_PORT}
+      ORDER_SERVICE_URL: http://order:${ORDER_PORT}
+    ports:
+      - "${HOST_PORT}:${GATEWAY_PORT}"
+    networks: [edge, app]
+    depends_on:
+      product:
+        condition: service_healthy
+      order:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
+
+  product:
+    build: ./services/product
+    environment:
+      PORT: ${PRODUCT_PORT}
+      REDIS_URL: redis://redis:6379
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS}
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      PGDATABASE: ${POSTGRES_DB}
+    networks: [app, data]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
+  order:
+    build: ./services/order
+    environment:
+      PORT: ${ORDER_PORT}
+      PRODUCT_SERVICE_URL: http://product:${PRODUCT_PORT}
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      PGDATABASE: ${POSTGRES_DB}
+    networks: [app, data]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      product:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--maxmemory", "100mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis-data:/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+networks:
+  edge:
+  app:
+    internal: true
+  data:
+    internal: true
+
+volumes:
+  postgres-data:
+  redis-data:
