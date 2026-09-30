@@ -1,0 +1,30 @@
+# Rate limiting: 10 requests per second per client IP, tracked in 10 MB of memory
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+limit_req_status 429;
+
+server {
+    listen 8080;
+    server_tokens off;
+
+    # Health check for Docker: not rate limited, not logged
+    location = /nginx-health {
+        access_log off;
+        default_type text/plain;
+        return 200 "healthy\n";
+    }
+
+    # Everything else: rate limit, then forward to the gateway
+    location / {
+        limit_req zone=api burst=20 nodelay;
+
+        proxy_pass http://gateway:${GATEWAY_PORT};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_hide_header X-Powered-By;
+
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 10s;
+    }
+}

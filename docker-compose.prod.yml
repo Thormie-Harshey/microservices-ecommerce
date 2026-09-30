@@ -3,14 +3,36 @@
 name: microservices-ecommerce
 
 services:
+  nginx:
+    image: nginxinc/nginx-unprivileged:1.31.6-alpine3.24
+    environment:
+      GATEWAY_PORT: ${GATEWAY_PORT}
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+    ports:
+      - "${HOST_PORT}:8080"
+    networks: [edge]
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64M
+
   gateway:
     image: ${DOCKERHUB_USER:?Set DOCKERHUB_USER in .env}/ecommerce-gateway:${IMAGE_TAG:?Set IMAGE_TAG in .env}
     environment:
       PORT: ${GATEWAY_PORT}
       PRODUCT_SERVICE_URL: http://product:${PRODUCT_PORT}
       ORDER_SERVICE_URL: http://order:${ORDER_PORT}
-    ports:
-      - "${HOST_PORT}:${GATEWAY_PORT}"
     networks: [edge, app]
     depends_on:
       product:
