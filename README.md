@@ -180,6 +180,7 @@ Evidence: [Docker Hub repositories](docs/screenshots/14-docker-hub-repos.png), [
 | `thormie/ecommerce-product:v1.0.1` | 0 | 0 |
 | `thormie/ecommerce-order:v1.0.1` | 0 | 0 |
 | `redis:8.10.2-alpine3.23` | 0 | 0 |
+| `nginxinc/nginx-unprivileged:1.31.6-alpine3.24` | 0 | 0 |
 | `postgres:18.6-alpine3.24` | 21 | 1 |
 
 **All three application images have zero HIGH and zero CRITICAL vulnerabilities.**
