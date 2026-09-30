@@ -19,7 +19,7 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 # Remove package managers (not needed to run the app) and create a non-root user
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /usr/local/lib/node_modules/corepack /usr/local/bin/corepack \
       /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg \
  && addgroup -S -g 1001 appgroup \
  && adduser -S -u 1001 -G appgroup appuser
