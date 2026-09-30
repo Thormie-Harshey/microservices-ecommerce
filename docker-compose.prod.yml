@@ -1,8 +1,10 @@
+# Production: pulls tested images from Docker Hub and never builds.
+# Run with: docker compose -f docker-compose.prod.yml up -d
 name: microservices-ecommerce
 
 services:
   gateway:
-    build: ./services/gateway
+    image: ${DOCKERHUB_USER:?Set DOCKERHUB_USER in .env}/ecommerce-gateway:${IMAGE_TAG:?Set IMAGE_TAG in .env}
     environment:
       PORT: ${GATEWAY_PORT}
       PRODUCT_SERVICE_URL: http://product:${PRODUCT_PORT}
@@ -23,7 +25,7 @@ services:
           memory: 128M
 
   product:
-    build: ./services/product
+    image: ${DOCKERHUB_USER:?Set DOCKERHUB_USER in .env}/ecommerce-product:${IMAGE_TAG:?Set IMAGE_TAG in .env}
     environment:
       PORT: ${PRODUCT_PORT}
       REDIS_URL: redis://redis:6379
@@ -46,7 +48,7 @@ services:
           memory: 256M
 
   order:
-    build: ./services/order
+    image: ${DOCKERHUB_USER:?Set DOCKERHUB_USER in .env}/ecommerce-order:${IMAGE_TAG:?Set IMAGE_TAG in .env}
     environment:
       PORT: ${ORDER_PORT}
       PRODUCT_SERVICE_URL: http://product:${PRODUCT_PORT}
